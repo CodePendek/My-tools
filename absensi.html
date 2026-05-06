@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Absensi App - Mobile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-spinner::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e7eb;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            cursor: pointer;
+        }
+        .modal img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+
+    <div class="max-w-md mx-auto" id="app"></div>
+
+    <div id="modal" class="modal" onclick="closeModal()">
+        <img id="modalImage" src="">
+    </div>
+
+    <script>
+        // ==================== KONFIGURASI ====================
+        const API_BASE = 'https://services-mobile.huabao-indonesia.com/api';
+        const LOGIN_URL = API_BASE + '/login';
+        const ATTENDANCE_URL = API_BASE + '/attendance/haikang/log';
+        const NOTIF_URL = API_BASE + '/notifikasi/unread';
+        const POIN_URL = API_BASE + '/system-poin/poin-static';
+
+        let authToken = null;
+        let currentUser = null;
+
+        // ==================== HELPER ====================
+        function getToday() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function formatTanggal(tgl) {
+            const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+            const parts = tgl.split('-');
+            if (parts.length === 3) {
+                return `${parseInt(parts[2])} ${bulan[parseInt(parts[1])-1]} ${parts[0]}`;
+            }
+            return tgl;
+        }
+
+        function formatTanggalLong(tgl) {
+            const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const parts = tgl.split('-');
+            if (parts.length === 3) {
+                return `${parseInt(parts[2])} ${bulan[parseInt(parts[1])-1]} ${parts[0]}`;
+            }
+            return tgl;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function getStatusBadge(status) {
+            if (!status || status === '') {
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">⏳ Pending</span>';
+            }
+            if (status.toLowerCase() === 'approved') {
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">✅ Disetujui</span>';
+            }
+            if (status.toLowerCase() === 'rejected') {
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">❌ Ditolak</span>';
+            }
+            return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">${escapeHtml(status)}</span>`;
+        }
+
+        // ==================== API CALLS ====================
+        async function login(username, password) {
+            try {
+                const response = await fetch(LOGIN_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Accept': 'application/json',
+                        'Origin': 'https://mobile.huabao-indonesia.com',
+                        'Referer': 'https://mobile.huabao-indonesia.com/'
+                    },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+
+                const data = await response.json();
+                console.log('Login response:', data);
+
+                if (response.ok) {
+                    let token = null;
+                    if (data.token) token = data.token;
+                    else if (data.access_token) token = data.access_token;
+                    else if (data.data && data.data.token) token = data.data.token;
+                    
+                    let user = null;
+                    if (data.user) user = data.user;
+                    else if (data.data && data.data.user) user = data.data.user;
+                    else if (data.employee) user = { name: data.employee.name, nik: data.employee.nik };
+                    else user = { name: username, nik: username };
+                    
+                    if (token) {
+                        return { success: true, token: token, user: user };
+                    } else {
+                        return { success: false, message: 'Token tidak ditemukan' };
+                    }
+                } else {
+                    return { success: false, message: data.message || data.error || 'Login gagal' };
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                return { success: false, message: 'Gagal terhubung ke server' };
+            }
+        }
+
+        async function fetchAttendanceToday() {
+            try {
+                const response = await fetch(`${ATTENDANCE_URL}?page=1`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                if (!response.ok) throw new Error('Gagal ambil data');
+                const data = await response.json();
+                if (data.status === 200 && data.data) {
+                    const today = getToday();
+                    const todayData = data.data.filter(item => item.tanggal === today);
+                    return { success: true, data: todayData };
+                }
+                return { success: false, data: [] };
+            } catch (error) {
+                return { success: false, data: [] };
+            }
+        }
+
+        async function fetchNotifikasi() {
+            try {
+                const response = await fetch(NOTIF_URL, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (!response.ok) return { count: 0 };
+                const data = await response.json();
+                let count = data.total || (data.data?.length) || 0;
+                return { count: count };
+            } catch (error) {
+                return { count: 0 };
+            }
+        }
+
+        async function fetchPoin() {
+            try {
+                const response = await fetch(POIN_URL, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (!response.ok) return { poin: 0 };
+                const data = await response.json();
+                let poin = data.poin || data.total_poin || 0;
+                return { poin: poin };
+            } catch (error) {
+                return { poin: 0 };
+            }
+        }
+
+        // ==================== RENDER DASHBOARD ====================
+        async function renderDashboard() {
+            const app = document.getElementById('app');
+            const initial = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U';
+            const todayFormatted = formatTanggalLong(getToday());
+
+            app.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-5 py-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                                ${escapeHtml(initial)}
+                            </div>
+                            <div>
+                                <h2 class="text-white font-bold text-lg">${escapeHtml(currentUser.name)}</h2>
+                                <p class="text-blue-100 text-sm">NIK: ${escapeHtml(currentUser.nik)}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-5">
+                            <div class="flex items-center gap-2 text-gray-600">
+                                <span>📅</span>
+                                <span class="font-medium">${todayFormatted}</span>
+                            </div>
+                            <div id="notifBadge"></div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3 mb-5">
+                            <div class="bg-amber-50 rounded-xl p-3 text-center">
+                                <div class="text-amber-500 text-xl mb-1">⭐</div>
+                                <div class="text-amber-800 font-bold text-lg" id="poinValue">-</div>
+                                <div class="text-amber-600 text-xs">Total Poin</div>
+                            </div>
+                            <div class="bg-blue-50 rounded-xl p-3 text-center">
+                                <div class="text-blue-500 text-xl mb-1">🔔</div>
+                                <div class="text-blue-800 font-bold text-lg" id="notifValue">-</div>
+                                <div class="text-blue-600 text-xs">Notifikasi</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 mb-4">
+                            <span>📋</span>
+                            <h3 class="font-semibold text-gray-800">Absensi Hari Ini</h3>
+                        </div>
+                        
+                        <div id="attendanceArea">
+                            <div class="text-center py-8 text-gray-400 text-sm">Memuat...</div>
+                        </div>
+                        
+                        <div class="mt-5 pt-4 border-t border-gray-100 text-center text-xs text-gray-400" id="timeStamp"></div>
+                        
+                        <button onclick="logout()" class="mt-4 w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-xl transition">
+                            🚪 Logout
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Load notif & poin
+            const notif = await fetchNotifikasi();
+            document.getElementById('notifValue').innerHTML = notif.count;
+            if (notif.count > 0) {
+                document.getElementById('notifBadge').innerHTML = `<span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${notif.count}</span>`;
+            }
+
+            const poin = await fetchPoin();
+            document.getElementById('poinValue').innerHTML = poin.poin;
+
+            // Load attendance
+            const attendance = await fetchAttendanceToday();
+            
+            if (attendance.success && attendance.data.length > 0) {
+                let html = '<div class="space-y-3">';
+                for (const att of attendance.data) {
+                    let fotoUrl = att.foto_selfi_url;
+                    if (fotoUrl && fotoUrl.startsWith('http://')) {
+                        fotoUrl = fotoUrl.replace('http://', 'https://');
+                    }
+                    
+                    html += `
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-2xl">⏰</span>
+                                    <span class="font-bold text-gray-800 text-lg">${att.jam}</span>
+                                </div>
+                                ${getStatusBadge(att.status)}
+                            </div>
+                            <div class="flex items-center gap-2 text-gray-600 text-sm mb-3">
+                                <span>🚪</span>
+                                <span>${escapeHtml(att.door_name)}</span>
+                            </div>
+                            ${att.note ? `<div class="bg-yellow-50 rounded-lg p-2 mb-3 text-xs text-yellow-700">📝 ${escapeHtml(att.note)}</div>` : ''}
+                            ${fotoUrl ? `
+                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                    <div class="text-xs text-gray-500 mb-2">📸 Foto: ${formatTanggal(att.tanggal)} ${att.jam}</div>
+                                    <img src="${fotoUrl}" 
+                                         class="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 border shadow-sm"
+                                         onclick="openModal('${fotoUrl}')"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+                                         alt="Selfie">
+                                    <div class="w-20 h-20 bg-gray-200 rounded-lg items-center justify-center text-gray-400 text-xs hidden">📷<br>Gagal</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                document.getElementById('attendanceArea').innerHTML = html;
+            } else {
+                document.getElementById('attendanceArea').innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-4xl mb-2">📭</div>
+                        <p class="text-gray-400 text-sm">Belum ada absensi hari ini</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('timeStamp').innerHTML = `🕐 ${new Date().toLocaleTimeString('id-ID')}`;
+        }
+
+        // ==================== LOGIN PAGE ====================
+        function showLoginPage(errorMsg = '') {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <div class="text-center mb-6">
+                        <div class="text-5xl mb-3">📱</div>
+                        <h2 class="text-2xl font-bold text-gray-800">Absensi App</h2>
+                        <p class="text-gray-500 text-sm mt-1">Masuk dengan akun Anda</p>
+                    </div>
+                    ${errorMsg ? `<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">❌ ${escapeHtml(errorMsg)}</div>` : ''}
+                    <form id="loginForm">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-medium mb-2">Username / NIK</label>
+                            <input type="text" id="username" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: SII230421101" required>
+                        </div>
+                        <div class="mb-5">
+                            <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+                            <input type="password" id="password" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan password" required>
+                        </div>
+                        <button type="submit" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-semibold rounded-xl">Login</button>
+                    </form>
+                    <p class="text-center text-gray-400 text-xs mt-5">Gunakan username & password asli Anda</p>
+                </div>
+            `;
+
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                if (!username || !password) {
+                    showLoginPage('Username dan password harus diisi');
+                    return;
+                }
+                const btn = e.target.querySelector('button');
+                const originalText = btn.innerText;
+                btn.innerText = 'Memproses...';
+                btn.disabled = true;
+                const result = await login(username, password);
+                if (result.success) {
+                    authToken = result.token;
+                    currentUser = result.user;
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    renderDashboard();
+                } else {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    showLoginPage(result.message);
+                }
+            });
+        }
+
+        // ==================== MODAL & LOGOUT ====================
+        function openModal(src) {
+            const modal = document.getElementById('modal');
+            const modalImg = document.getElementById('modalImage');
+            modal.style.display = 'block';
+            modalImg.src = src;
+        }
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+        function logout() {
+            localStorage.clear();
+            authToken = null;
+            currentUser = null;
+            showLoginPage();
+        }
+
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.logout = logout;
+
+        // START
+        const savedToken = localStorage.getItem('authToken');
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedToken && savedUser) {
+            authToken = savedToken;
+            currentUser = JSON.parse(savedUser);
+            renderDashboard();
+        } else {
+            showLoginPage();
+        }
+    </script>
+</body>
+</html>

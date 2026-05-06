@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Tools Hub - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
+                    <span class="text-white text-sm">🛠️</span>
+                </div>
+                <h1 class="font-bold text-gray-800">Tools Hub</h1>
+            </div>
+            <div class="text-xs text-gray-400">
+                v1.0
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 py-6">
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800">Dashboard Tools</h2>
+            <p class="text-gray-500 text-sm mt-1">Kumpulan tools bantuan untuk aktivitas sehari-hari</p>
+        </div>
+
+        <!-- Grid Tools -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            
+            <!-- Tool 1: Absensi App -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+                <div class="p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-xl">
+                            📱
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Absensi App</h3>
+                            <p class="text-xs text-gray-400">Mobile</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Lihat absensi harian, foto selfie, notifikasi, dan poin. Akses cepat tanpa login ulang.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">✅ Aktif</span>
+                        <button onclick="openTool('absensi')" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
+                            Buka →
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool 2: (Placeholder - Tambahkan nanti) -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+                <div class="p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xl">
+                            📊
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Rekap Absensi</h3>
+                            <p class="text-xs text-gray-400">Coming Soon</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Rekap bulanan, statistik kehadiran, export PDF/CSV.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">⏳ Development</span>
+                        <button disabled 
+                                class="px-4 py-2 bg-gray-200 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">
+                            🔒
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool 3: (Placeholder) -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+                <div class="p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-xl">
+                            📅
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Kalender Kerja</h3>
+                            <p class="text-xs text-gray-400">Coming Soon</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Lihat jadwal shift, hari libur nasional, dan cuti bersama.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">⏳ Development</span>
+                        <button disabled 
+                                class="px-4 py-2 bg-gray-200 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">
+                            🔒
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool 4: (Placeholder) -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+                <div class="p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-xl">
+                            💰
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Slip Gaji</h3>
+                            <p class="text-xs text-gray-400">Coming Soon</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Lihat slip gaji bulanan, potongan, dan tunjangan.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">⏳ Development</span>
+                        <button disabled 
+                                class="px-4 py-2 bg-gray-200 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">
+                            🔒
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool 5: (Placeholder) -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+                <div class="p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-xl">
+                            🗓️
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Pengajuan Izin</h3>
+                            <p class="text-xs text-gray-400">Coming Soon</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Ajukan izin, sakit, atau cuti secara online.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">⏳ Development</span>
+                        <button disabled 
+                                class="px-4 py-2 bg-gray-200 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">
+                            🔒
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool 6: Tambah Tool Baru -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border-2 border-dashed border-gray-300">
+                <div class="p-5 text-center">
+                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
+                        ➕
+                    </div>
+                    <h3 class="font-semibold text-gray-600">Tambah Tool Baru</h3>
+                    <p class="text-gray-400 text-xs mt-1">Kembangkan tools selanjutnya</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Footer -->
+        <div class="mt-8 text-center text-xs text-gray-400">
+            <p>Tools Hub - Kumpulan tools untuk mempermudah aktivitas kerja</p>
+            <p class="mt-1">© 2026 - Dibuat untuk keperluan pribadi</p>
+        </div>
+    </div>
+
+    <script>
+        // Fungsi untuk membuka tools yang sudah dibuat
+        function openTool(toolName) {
+            if (toolName === 'absensi') {
+                // Buka halaman absensi (simpan dulu di localStorage atau buka di tab baru)
+                // Kita simpan data tools yang aktif
+                localStorage.setItem('activeTool', 'absensi');
+                window.location.href = 'absensi.html';
+            }
+        }
+
+        // Cek apakah ada tool yang sedang aktif
+        window.addEventListener('load', function() {
+            console.log('Tools Hub siap digunakan');
+        });
+    </script>
+</body>
+</html>
