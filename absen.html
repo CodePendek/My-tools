@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Absensi Real - Connect to Server</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+
+<div class="max-w-md mx-auto bg-white rounded-xl shadow-md p-6">
+    <h1 class="text-xl font-bold mb-2">📍 Absensi Real-Time</h1>
+    <p class="text-xs text-red-500 mb-4">⚠️ TERHUBUNG KE SERVER PERUSAHAAN</p>
+    
+    <!-- Info User -->
+    <div class="mb-4 p-3 bg-blue-50 rounded-lg text-sm">
+        <div class="font-bold">👤 Alif Rahman</div>
+        <div class="text-gray-600">NIK: SII230421101</div>
+    </div>
+    
+    <!-- Status -->
+    <div id="statusArea" class="mb-4 p-3 bg-yellow-50 rounded-lg text-center text-sm">
+        ⏳ Mengecek lokasi...
+    </div>
+    
+    <!-- Tombol Absen -->
+    <div class="flex gap-2 mb-4">
+        <button id="absenMasuk" class="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold text-lg">✅ Absen Masuk</button>
+        <button id="absenKeluar" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-lg">🏠 Absen Keluar</button>
+    </div>
+    
+    <!-- Preview Foto -->
+    <div id="cameraSection" class="mb-4 hidden">
+        <div class="bg-gray-100 rounded-lg p-4">
+            <video id="camera" autoplay playsinline class="w-full rounded-lg mb-2"></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            <div class="flex gap-2">
+                <button id="captureBtn" class="flex-1 bg-blue-600 text-white py-2 rounded-lg">📷 Ambil Foto</button>
+                <button id="cancelCamera" class="flex-1 bg-gray-400 text-white py-2 rounded-lg">❌ Batal</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Preview & Konfirmasi -->
+    <div id="previewSection" class="mb-4 hidden">
+        <div class="bg-gray-100 rounded-lg p-4 text-center">
+            <img id="preview" class="w-40 h-40 object-cover rounded-lg mx-auto mb-2">
+            <div class="flex gap-2">
+                <button id="confirmBtn" class="flex-1 bg-green-600 text-white py-2 rounded-lg">✅ Kirim ke Server</button>
+                <button id="retakeBtn" class="flex-1 bg-gray-500 text-white py-2 rounded-lg">🔄 Ambil Ulang</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Log Activity -->
+    <div class="mt-4">
+        <h3 class="font-bold text-sm mb-2">📋 Log Aktivitas</h3>
+        <div id="logArea" class="bg-gray-50 rounded-lg p-2 text-xs h-32 overflow-y-auto">
+            Siap melakukan absensi...
+        </div>
+    </div>
+</div>
+
+<script>
+// Konfigurasi
+const TOKEN = "839176|UqG8G5NRcOZg65dvCPJzcGyXXKeXFygArs590qKEe056e3c4";
+const API_BASE = "https://services-mobile.huabao-indonesia.com/api";
+
+// Data lokasi kantor (dari API)
+let lokasiKantor = [];
+let currentLocation = null;
+let currentPhoto = null;
+let currentType = null;
+let stream = null;
+
+function addLog(msg, isError = false) {
+    const logArea = document.getElementById('logArea');
+    const time = new Date().toLocaleTimeString('id-ID');
+    const logDiv = document.createElement('div');
+    logDiv.className = isError ? 'text-red-600 mb-1' : 'text-gray-600 mb-1';
+    logDiv.innerHTML = `[${time}] ${msg}`;
+    logArea.appendChild(logDiv);
+    logArea.scrollTop = logArea.scrollHeight;
+    console.log(msg);
+}
+
+async function loadLokasiKantor() {
+    try {
+        const res = await fetch(`${API_BASE}/attendance/master-location-fingers`, {
+            headers: { "Authorization": `Bearer ${TOKEN}` }
+        });
+        const data = await res.json();
+        if (data.status === 200 && data.data) {
+            lokasiKantor = data.data;
+            addLog(`✅ Load ${lokasiKantor.length} lokasi kantor`);
+            return true;
+        }
+    } catch(e) {
+        addLog(`❌ Gagal load lokasi: ${e.message}`, true);
+    }
+    return false;
+}
+
+function hitungJarak(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+function cekRadius(lat, lng) {
+    for (const kantor of lokasiKantor) {
+        const jarak = hitungJarak(lat, lng, kantor.lat, kantor.lng);
+        if (jarak <= kantor.jarak) {
+            return { valid: true, kantor: kantor.name, jarak: Math.round(jarak), radius: kantor.jarak };
+        }
+    }
+    
+    // Cari jarak terdekat
+    let minJarak = Infinity;
+    let terdekat = null;
+    for (const kantor of lokasiKantor) {
+        const jarak = hitungJarak(lat, lng, kantor.lat, kantor.lng);
+        if (jarak < minJarak) {
+            minJarak = jarak;
+            terdekat = kantor.name;
+        }
+    }
+    return { valid: false, kantor: terdekat, jarak: Math.round(minJarak) };
+}
+
+async function getLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("Geolocation tidak didukung"));
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000
+        });
+    });
+}
+
+async function updateStatus() {
+    const statusDiv = document.getElementById('statusArea');
+    statusDiv.innerHTML = "📍 Mendapatkan lokasi...";
+    
+    try {
+        const pos = await getLocation();
+        currentLocation = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy
+        };
+        
+        const cek = cekRadius(currentLocation.lat, currentLocation.lng);
+        
+        if (cek.valid) {
+            statusDiv.innerHTML = `✅ Lokasi valid! ${cek.kantor} (${cek.jarak}m / radius ${cek.radius}m)`;
+            statusDiv.className = "mb-4 p-3 bg-green-100 rounded-lg text-center text-sm text-green-700";
+            return true;
+        } else {
+            statusDiv.innerHTML = `❌ DI LUAR RADIUS! Terdekat: ${cek.kantor} (${cek.jarak}m)`;
+            statusDiv.className = "mb-4 p-3 bg-red-100 rounded-lg text-center text-sm text-red-700";
+            return false;
+        }
+    } catch(e) {
+        statusDiv.innerHTML = `❌ Gagal ambil lokasi: ${e.message}`;
+        statusDiv.className = "mb-4 p-3 bg-red-100 rounded-lg text-center text-sm text-red-700";
+        return false;
+    }
+}
+
+async function startCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+        const video = document.getElementById('camera');
+        video.srcObject = stream;
+        return true;
+    } catch(e) {
+        addLog(`❌ Gagal akses kamera: ${e.message}`, true);
+        return false;
+    }
+}
+
+function capturePhoto() {
+    const video = document.getElementById('camera');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.8);
+}
+
+async function sendToServer(type, photo, location) {
+    addLog(`📤 Mengirim absensi ${type} ke server...`);
+    
+    // Konversi base64 ke blob
+    const byteString = atob(photo.split(',')[1]);
+    const mimeString = photo.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([ab], { type: mimeString });
+    
+    // Form data untuk upload
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('lat', location.lat);
+    formData.append('lng', location.lng);
+    formData.append('foto', blob, `selfie_${Date.now()}.jpg`);
+    
+    // Coba POST ke beberapa endpoint yang mungkin
+    const endpoints = [
+        `${API_BASE}/attendance/clock-in`,
+        `${API_BASE}/attendance/clock-out`,
+        `${API_BASE}/attendance/submit`,
+        `${API_BASE}/attendance/store`
+    ];
+    
+    for (const endpoint of endpoints) {
+        try {
+            addLog(`🔌 Mencoba ${endpoint}...`);
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${TOKEN}`
+                },
+                body: formData
+            });
+            
+            if (res.ok) {
+                const result = await res.json();
+                addLog(`✅ Berhasil! Response: ${JSON.stringify(result)}`);
+                return { success: true, data: result };
+            } else {
+                addLog(`❌ ${endpoint}: ${res.status}`);
+            }
+        } catch(e) {
+            addLog(`⚠️ ${endpoint} error: ${e.message}`);
+        }
+    }
+    
+    // Jika semua gagal, simpan ke localStorage sebagai backup
+    addLog(`⚠️ Gagal kirim ke server, simpan ke lokal...`, true);
+    const backup = JSON.parse(localStorage.getItem('absensi_backup') || '[]');
+    backup.push({
+        type: type,
+        timestamp: new Date().toISOString(),
+        location: location,
+        photo: photo.substring(0, 100) + '...'
+    });
+    localStorage.setItem('absensi_backup', JSON.stringify(backup));
+    
+    return { success: false, message: "Gagal kirim ke server, tersimpan lokal" };
+}
+
+async function prosesAbsen(type) {
+    // Cek lokasi dulu
+    const isValidLocation = await updateStatus();
+    if (!isValidLocation) {
+        const lanjut = confirm("⚠️ Anda di luar radius kantor! Tetap lanjut?");
+        if (!lanjut) return;
+    }
+    
+    // Mulai kamera
+    const cameraOk = await startCamera();
+    if (!cameraOk) return;
+    
+    currentType = type;
+    document.getElementById('cameraSection').classList.remove('hidden');
+    document.getElementById('previewSection').classList.add('hidden');
+}
+
+document.getElementById('absenMasuk').addEventListener('click', () => prosesAbsen('masuk'));
+document.getElementById('absenKeluar').addEventListener('click', () => prosesAbsen('keluar'));
+
+document.getElementById('captureBtn').addEventListener('click', () => {
+    const photo = capturePhoto();
+    currentPhoto = photo;
+    document.getElementById('preview').src = photo;
+    document.getElementById('cameraSection').classList.add('hidden');
+    document.getElementById('previewSection').classList.remove('hidden');
+    
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+});
+
+document.getElementById('retakeBtn').addEventListener('click', async () => {
+    await startCamera();
+    document.getElementById('cameraSection').classList.remove('hidden');
+    document.getElementById('previewSection').classList.add('hidden');
+});
+
+document.getElementById('confirmBtn').addEventListener('click', async () => {
+    if (!currentPhoto || !currentLocation) {
+        addLog("❌ Data tidak lengkap", true);
+        return;
+    }
+    
+    const result = await sendToServer(currentType, currentPhoto, currentLocation);
+    
+    if (result.success) {
+        addLog(`🎉 Absensi ${currentType} berhasil!`);
+        alert(`✅ Absensi ${currentType} berhasil dikirim ke server!`);
+    } else {
+        addLog(`⚠️ ${result.message}`, true);
+        alert(`⚠️ ${result.message}`);
+    }
+    
+    // Reset UI
+    document.getElementById('previewSection').classList.add('hidden');
+    currentPhoto = null;
+    currentType = null;
+    await updateStatus();
+});
+
+document.getElementById('cancelCamera').addEventListener('click', () => {
+    document.getElementById('cameraSection').classList.add('hidden');
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+});
+
+// Inisialisasi
+loadLokasiKantor();
+updateStatus();
+</script>
+
+</body>
+</html>

@@ -3,343 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Prediksi Gaji - Kalender Absensi</title>
+    <title>Slip Gaji Live - Huabao</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .calendar-day {
-            transition: all 0.2s ease;
+        .shift-p { background-color: #dbeafe; color: #1e40af; }
+        .shift-m { background-color: #fef3c7; color: #92400e; }
+        .shift-off { background-color: #f3f4f6; color: #4b5563; }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
         }
-        .calendar-day:hover {
-            transform: scale(1.05);
-            z-index: 10;
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
-        .hadir-bg { background-color: #dcfce7; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 95%;
+            max-height: 85%;
+            overflow-y: auto;
+            margin: 20px;
+        }
+        .hadir-bg { background-color: #d1fae5; }
         .izin-bg { background-color: #fed7aa; }
         .off-bg { background-color: #e5e7eb; }
-        .sakit-bg { background-color: #bfdbfe; }
+        .cuti-bg { background-color: #e9d5ff; }
         .alpha-bg { background-color: #fecaca; }
-        .default-bg { background-color: #f3f4f6; }
     </style>
 </head>
-<body class="bg-gray-100 p-4">
+<body class="bg-gray-100 p-3" style="margin: 0; overflow-x: hidden;">
 
-<div class="max-w-md mx-auto bg-white rounded-xl shadow-md p-6">
-    <h1 class="text-xl font-bold mb-4">📅 Kalender Absensi & Prediksi Gaji</h1>
-    
-    <!-- Info User -->
-    <div class="mb-4 p-3 bg-blue-50 rounded-lg text-sm">
-        <div class="font-bold">👤 Alif Rahman</div>
-        <div class="text-gray-600">NIK: SII230421101 | Grade: 2 | Gudang Bahan Baku</div>
-    </div>
-    
-    <!-- Pilih Periode -->
-    <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2">📅 Pilih Periode Gaji:</label>
-        <select id="periodeSelect" class="w-full px-3 py-2 border rounded-lg" onchange="loadPeriode()">
-            <option value="2026-04">April 2026 (21 Maret - 20 April)</option>
-            <option value="2026-05">Mei 2026 (21 April - 20 Mei)</option>
-        </select>
-        <p id="infoData" class="text-xs text-gray-500 mt-1"></p>
-    </div>
-    
-    <!-- Loading -->
-    <div id="loading" class="text-center py-8 hidden">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p class="text-gray-500 mt-2">Mengambil data absensi...</p>
-    </div>
-    
-    <!-- ========== KALENDER ABSENSI ========== -->
-    <div id="kalenderContainer" style="display: none;" class="mb-5">
-        <div class="bg-gray-100 rounded-lg overflow-hidden">
-            <div class="bg-gray-700 text-white px-4 py-2 text-center font-bold">
-                📆 Periode: <span id="periodeRange"></span>
-            </div>
-            <div id="kalenderGrid" class="p-3">
-                <!-- Grid kalender akan diisi JS -->
-            </div>
-        </div>
-    </div>
-    
-    <!-- ========== REKAP SINGKAT ========== -->
-    <div id="rekapSingkat" style="display: none;" class="mb-5 bg-gray-50 rounded-lg p-3">
-        <div class="grid grid-cols-2 gap-2 text-sm">
-            <div class="flex justify-between">
-                <span>✅ Hadir:</span>
-                <span id="rHadir" class="font-bold text-green-600">0</span>
-            </div>
-            <div class="flex justify-between">
-                <span>📝 Izin (IP):</span>
-                <span id="rIP" class="font-bold text-orange-600">0</span>
-            </div>
-            <div class="flex justify-between">
-                <span>🤒 Sakit:</span>
-                <span id="rSakit" class="font-bold text-blue-600">0</span>
-            </div>
-            <div class="flex justify-between">
-                <span>📌 OFF:</span>
-                <span id="rOff" class="font-bold text-gray-600">0</span>
-            </div>
-            <div class="flex justify-between">
-                <span>⚠️ Alpa:</span>
-                <span id="rAlpa" class="font-bold text-red-600">0</span>
-            </div>
-            <div class="flex justify-between">
-                <span>💪 Jam Lembur:</span>
-                <span id="rLemburJam" class="font-bold text-yellow-600">0</span>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Tombol Hitung Prediksi -->
-    <button onclick="hitungPrediksi()" id="btnPrediksi" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 mb-4 hidden">
-        🔮 Hitung Prediksi Gaji
-    </button>
-    
-    <!-- Hasil Prediksi -->
-    <div id="hasil" style="display: none;" class="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
-        <h2 class="font-bold mb-2 text-center">💰 Estimasi Gaji Bersih</h2>
-        <div class="text-center mb-2">
-            <span id="rTotalGaji" class="text-2xl font-bold text-green-600">Rp 0</span>
-        </div>
-        
-        <div class="border-t pt-2 mt-2 text-xs">
-            <div class="flex justify-between">
-                <span>Gaji Pokok + Tunjangan:</span>
-                <span>Rp 4.628.000</span>
-            </div>
-            <div class="flex justify-between">
-                <span>+ Pendapatan Lembur:</span>
-                <span id="rLemburRupiah" class="text-green-600">Rp 0</span>
-            </div>
-            <div class="flex justify-between">
-                <span>+ Insentif Hadir:</span>
-                <span id="rInsentif" class="text-green-600">Rp 0</span>
-            </div>
-            <div class="flex justify-between">
-                <span>- Potongan IP:</span>
-                <span id="rPotongan" class="text-red-600">Rp 0</span>
-            </div>
-            <div class="flex justify-between">
-                <span>- Potongan Tetap:</span>
-                <span>Rp 340.000</span>
-            </div>
-        </div>
-        
-        <p class="text-xs text-gray-500 mt-2 text-center">*Berdasarkan data absensi periode 21-20</p>
-    </div>
-</div>
+<div id="app"></div>
 
 <script>
-// Konfigurasi
-const TOKEN = "839106|nYPgSs4AlgyO3KrUTlWjoZY60UriXI5QHfKSywkL7ed49bd0";
+// ==================== KONFIGURASI ====================
+const API_BASE = 'https://services-mobile.huabao-indonesia.com/api';
+const LOGIN_URL = API_BASE + '/login';
 
 // Konstanta perhitungan gaji
-const GAJI_POKOK_TT = 4628000;
-const INSENTIF_MAX = 390000;
-const NILAI_LEMBUR_PER_JAM = 116700;
-const POTONGAN_TETAP = 340000;
-const POTONGAN_PER_IP = 281059;
+const GAPOK = 3928000;
+const TUNJ_TETAP = 700000;
+const GAJI_POKOK_TUNJANGAN = GAPOK + TUNJ_TETAP;
+const INSENTIF_HADIR_MAX = 390000;
+const INSENTIF_KELUARGA = 150000;
+const UPAH_SEJAM = Math.round(GAJI_POKOK_TUNJANGAN / 173);
+const POTONGAN_TETAP = 621197;
+const POT_IP_DASAR = 272235;
+const POT_IP_INSENTIF = 8824;
 
-let currentData = [];
+// Periode Mei 2026
+const PERIODE = '2026-05';
+const [TAHUN, BULAN] = PERIODE.split('-');
+let BULAN_SEBELUM = parseInt(BULAN) - 1;
+let TAHUN_SEBELUM = parseInt(TAHUN);
+if (BULAN_SEBELUM === 0) {
+    BULAN_SEBELUM = 12;
+    TAHUN_SEBELUM--;
+}
+const START_DATE = `${TAHUN_SEBELUM}-${String(BULAN_SEBELUM).padStart(2,'0')}-21`;
+const END_DATE = `${TAHUN}-${BULAN}-20`;
 
-async function loadPeriode() {
-    const periode = document.getElementById('periodeSelect').value;
-    const [tahun, bulan] = periode.split('-');
-    
-    // Hitung rentang periode 21-20
-    let bulanSebelum = parseInt(bulan) - 1;
-    let tahunSebelum = parseInt(tahun);
-    
-    if (bulanSebelum === 0) {
-        bulanSebelum = 12;
-        tahunSebelum--;
+// Jadwal shift
+const JADWAL_MEI = {
+    '2026-05-01': 'OFF', '2026-05-02': 'P', '2026-05-03': 'M',
+    '2026-05-04': 'OFF', '2026-05-05': 'P', '2026-05-06': 'M',
+    '2026-05-07': 'P', '2026-05-08': 'M', '2026-05-09': 'P',
+    '2026-05-10': 'OFF', '2026-05-11': 'P', '2026-05-12': 'M',
+    '2026-05-13': 'OFF', '2026-05-14': 'P', '2026-05-15': 'M',
+    '2026-05-16': 'OFF', '2026-05-17': 'P', '2026-05-18': 'M',
+    '2026-05-19': 'OFF', '2026-05-20': 'P', '2026-05-21': 'M',
+    '2026-05-22': 'OFF', '2026-05-23': 'P', '2026-05-24': 'M',
+    '2026-05-25': 'OFF', '2026-05-26': 'P', '2026-05-27': 'M',
+    '2026-05-28': 'OFF', '2026-05-29': 'P', '2026-05-30': 'M',
+    '2026-05-31': 'OFF'
+};
+
+let authToken = null;
+let currentUser = null;
+let sessionTimer = null;
+let currentCalendarData = [];
+
+// ==================== HELPER ====================
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+function formatRupiah(angka) {
+    return "Rp " + Math.round(angka).toLocaleString('id-ID');
+}
+
+function formatTanggal(tglStr) {
+    const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const parts = tglStr.split('-');
+    if (parts.length === 3) {
+        return `${parseInt(parts[2])} ${bulan[parseInt(parts[1])-1]} ${parts[0]}`;
     }
-    
-    const startDate = `${tahunSebelum}-${String(bulanSebelum).padStart(2,'0')}-21`;
-    const endDate = `${tahun}-${bulan}-20`;
-    
-    document.getElementById('periodeRange').innerHTML = `${startDate} s/d ${endDate}`;
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('kalenderContainer').style.display = 'none';
-    document.getElementById('rekapSingkat').style.display = 'none';
-    document.getElementById('btnPrediksi').classList.add('hidden');
-    document.getElementById('hasil').style.display = 'none';
-    
+    return tglStr;
+}
+
+function getShiftClass(shift) {
+    if (shift === 'P') return 'shift-p';
+    if (shift === 'M') return 'shift-m';
+    if (shift === 'OFF') return 'shift-off';
+    return '';
+}
+
+function getStatusIcon(status) {
+    if (status === '12.00' || status === '12') return '✅';
+    if (status === 'IP') return '📝';
+    if (status === 'OFF') return '📌';
+    if (status === 'CF' || status === 'CT') return '🏠';
+    if (status === 'A' || status === 'Alpha') return '⚠️';
+    return '❓';
+}
+
+// ==================== SESSION ====================
+function startSessionTimer() {
+    if (sessionTimer) clearInterval(sessionTimer);
+    sessionTimer = setTimeout(() => {
+        alert('⚠️ Sesi habis! Silakan login ulang.');
+        logout();
+    }, 55 * 60 * 1000);
+}
+
+function resetSessionTimer() {
+    if (sessionTimer) {
+        clearTimeout(sessionTimer);
+        startSessionTimer();
+    }
+}
+
+// ==================== LOGIN ====================
+async function login(username, password) {
     try {
-        // Ambil data dari API
-        let allData = [];
-        let page = 1;
-        let lastPage = 1;
-        
-        const firstRes = await fetch(`https://services-mobile.huabao-indonesia.com/api/attendance?periode=${periode}-01&page=1`, {
-            headers: { "Authorization": `Bearer ${TOKEN}` }
+        const response = await fetch(LOGIN_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Accept': 'application/json',
+                'Origin': 'https://mobile.huabao-indonesia.com',
+                'Referer': 'https://mobile.huabao-indonesia.com/'
+            },
+            body: JSON.stringify({ username: username, password: password })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            let token = data.token || data.data?.token || data.access_token;
+            let user = data.user || data.data?.user || { name: username, nik: username };
+            if (token) return { success: true, token: token, user: user };
+            return { success: false, message: 'Token tidak ditemukan' };
+        }
+        return { success: false, message: data.message || 'Login gagal' };
+    } catch (error) {
+        return { success: false, message: 'Gagal terhubung ke server' };
+    }
+}
+
+// ==================== API DATA ====================
+async function getAllAttendance() {
+    let allData = [];
+    let page = 1;
+    let lastPage = 1;
+    try {
+        const firstRes = await fetch(`${API_BASE}/attendance?periode=${PERIODE}-01&page=1`, {
+            headers: { "Authorization": `Bearer ${authToken}` }
         });
         const firstJson = await firstRes.json();
-        
         if (firstJson.data) {
             allData = [...firstJson.data];
             lastPage = firstJson.meta?.last_page || 1;
-            
             for (let p = 2; p <= lastPage; p++) {
-                const nextRes = await fetch(`https://services-mobile.huabao-indonesia.com/api/attendance?periode=${periode}-01&page=${p}`, {
-                    headers: { "Authorization": `Bearer ${TOKEN}` }
+                const nextRes = await fetch(`${API_BASE}/attendance?periode=${PERIODE}-01&page=${p}`, {
+                    headers: { "Authorization": `Bearer ${authToken}` }
                 });
                 const nextJson = await nextRes.json();
-                if (nextJson.data) {
-                    allData = [...allData, ...nextJson.data];
-                }
+                if (nextJson.data) allData = [...allData, ...nextJson.data];
             }
         }
-        
-        // Filter sesuai periode 21-20
-        currentData = allData.filter(item => item.date >= startDate && item.date <= endDate);
-        currentData.sort((a,b) => new Date(a.date) - new Date(b.date));
-        
-        console.log('Data periode:', currentData);
-        
-        if (currentData.length === 0) {
-            alert(`Tidak ada data untuk periode ${startDate} s/d ${endDate}`);
-            document.getElementById('loading').style.display = 'none';
-            return;
-        }
-        
-        // Render kalender
-        renderKalender(currentData, startDate, endDate);
-        
-        // Render rekap singkat
-        renderRekap(currentData);
-        
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('kalenderContainer').style.display = 'block';
-        document.getElementById('rekapSingkat').style.display = 'block';
-        document.getElementById('btnPrediksi').classList.remove('hidden');
-        
+        return allData;
     } catch (error) {
-        console.error('Error:', error);
-        alert('Gagal mengambil data: ' + error.message);
-        document.getElementById('loading').style.display = 'none';
+        return [];
     }
 }
 
-function renderKalender(data, startDate, endDate) {
-    const grid = document.getElementById('kalenderGrid');
-    
-    // Buat daftar semua tanggal dalam rentang
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const dates = [];
-    let current = new Date(start);
-    
-    while (current <= end) {
-        dates.push(new Date(current));
-        current.setDate(current.getDate() + 1);
-    }
-    
-    // Map data ke tanggal
-    const dataMap = {};
-    data.forEach(item => {
-        dataMap[item.date] = item;
-    });
-    
-    // Nama hari
-    const hari = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-    
-    // Buat grid
-    let html = '<div class="grid grid-cols-7 gap-1 text-center">';
-    
-    // Header hari
-    for (let i = 0; i < 7; i++) {
-        html += `<div class="text-xs font-bold text-gray-500 py-1">${hari[i]}</div>`;
-    }
-    
-    // Tanggal kosong di awal
-    const firstDay = start.getDay();
-    for (let i = 0; i < firstDay; i++) {
-        html += `<div class="text-center text-gray-300 text-xs py-2 bg-gray-50 rounded"></div>`;
-    }
-    
-    // Tanggal
-    for (const date of dates) {
-        const dateStr = date.toISOString().split('T')[0];
-        const item = dataMap[dateStr];
-        const dayNum = date.getDate();
-        
-        let status = '';
-        let bgClass = 'default-bg';
-        let tooltip = '';
-        
-        if (item) {
-            const aktual = item.aktual;
-            if (aktual === '12.00' || aktual === '12') {
-                status = '✅';
-                bgClass = 'hadir-bg';
-                tooltip = `Hadir ${aktual} jam`;
-            } else if (aktual === 'IP') {
-                status = '📝';
-                bgClass = 'izin-bg';
-                tooltip = 'Izin Potong';
-            } else if (aktual === 'OFF') {
-                status = '📌';
-                bgClass = 'off-bg';
-                tooltip = 'Libur / OFF';
-            } else if (aktual === 'SK' || aktual === 'Sakit') {
-                status = '🤒';
-                bgClass = 'sakit-bg';
-                tooltip = 'Sakit';
-            } else if (aktual === 'A' || aktual === 'Alpha') {
-                status = '⚠️';
-                bgClass = 'alpha-bg';
-                tooltip = 'Alpa';
-            }// Di bagian renderRekap dan renderKalender, tambahkan:
-else if (aktual === 'CF') {
-    status = '🏠';
-    bgClass = 'cuti-bg';
-    tooltip = 'Cuti Family Visit';
-} else {
-                status = '❓';
-                tooltip = aktual;
-            }
-        } else {
-            status = '❓';
-            tooltip = 'Tidak ada data';
-        }
-        
-        html += `
-            <div class="calendar-day ${bgClass} rounded-lg p-2 text-center cursor-help" title="${tooltip}">
-                <div class="text-xs font-medium">${dayNum}</div>
-                <div class="text-sm">${status}</div>
-            </div>
-        `;
-    }
-    
-    html += '</div>';
-    grid.innerHTML = html;
-}
-
-function renderRekap(data) {
-    let hadir = 0;
-    let ip = 0;
-    let sakit = 0;
-    let off = 0;
-    let alpa = 0;
-    let totalJamKerja = 0;
-    
+function hitungRekap(data) {
+    let hadir = 0, ip = 0, sakit = 0, off = 0, alpa = 0, cuti = 0, totalJamKerja = 0;
     data.forEach(item => {
         const aktual = item.aktual;
-        
         if (aktual === '12.00' || aktual === '12') {
             hadir++;
             totalJamKerja += 12;
-        } else if (aktual === 'IP') {
-            ip++;
-        } else if (aktual === 'OFF') {
-            off++;
-        } else if (aktual === 'SK' || aktual === 'Sakit') {
-            sakit++;
-        } else if (aktual === 'A' || aktual === 'Alpha') {
-            alpa++;
-        } else {
-            // Cek apakah angka
+        } else if (aktual === 'IP') ip++;
+        else if (aktual === 'OFF') off++;
+        else if (aktual === 'SK' || aktual === 'Sakit') sakit++;
+        else if (aktual === 'A' || aktual === 'Alpha') alpa++;
+        else if (aktual === 'CF' || aktual === 'CT') cuti++;
+        else {
             const jam = parseFloat(aktual);
             if (!isNaN(jam) && jam > 0) {
                 hadir++;
@@ -347,52 +226,352 @@ function renderRekap(data) {
             }
         }
     });
-    
-    // Hitung lembur (asumsi normal 12 jam/hari)
     const jamNormal = hadir * 12;
     const jamLembur = Math.max(0, totalJamKerja - jamNormal);
-    
-    document.getElementById('rHadir').innerHTML = hadir;
-    document.getElementById('rIP').innerHTML = ip;
-    document.getElementById('rSakit').innerHTML = sakit;
-    document.getElementById('rOff').innerHTML = off;
-    document.getElementById('rAlpa').innerHTML = alpa;
-    document.getElementById('rLemburJam').innerHTML = jamLembur.toFixed(1);
-    
-    // Simpan data untuk prediksi
-    window.rekapData = { hadir, ip, jamLembur, totalHari: data.length };
+    const pendapatanLembur = jamLembur * UPAH_SEJAM;
+    const insentifHadir = Math.max(0, INSENTIF_HADIR_MAX - (ip * POT_IP_INSENTIF));
+    const potonganAbsen = ip * POT_IP_DASAR;
+    const totalPendapatan = GAJI_POKOK_TUNJANGAN + INSENTIF_KELUARGA + insentifHadir + pendapatanLembur;
+    const prediksiGaji = totalPendapatan - (POTONGAN_TETAP + potonganAbsen);
+    return {
+        hadir, ip, sakit, off, alpa, cuti,
+        jamLembur: jamLembur.toFixed(1),
+        totalJamKerja: totalJamKerja.toFixed(1),
+        pendapatanLembur, insentifHadir, potonganAbsen,
+        totalPendapatan, prediksiGaji, totalHari: data.length
+    };
 }
 
-function hitungPrediksi() {
-    if (!window.rekapData) return;
-    
-    const { hadir, ip, jamLembur, totalHari } = window.rekapData;
-    
-    // Hitung komponen gaji
-    const pendapatanLembur = jamLembur * NILAI_LEMBUR_PER_JAM;
-    const targetHadir = 25;
-    const insentifHadir = Math.min(INSENTIF_MAX, (hadir / targetHadir) * INSENTIF_MAX);
-    const potonganIP = ip * POTONGAN_PER_IP;
-    
-    const totalPendapatan = GAJI_POKOK_TT + pendapatanLembur + insentifHadir;
-    const totalPotongan = POTONGAN_TETAP + potonganIP;
-    const gajiBersih = totalPendapatan - totalPotongan;
-    
-    document.getElementById('rTotalGaji').innerHTML = `Rp ${Math.round(gajiBersih).toLocaleString('id-ID')}`;
-    document.getElementById('rLemburRupiah').innerHTML = `Rp ${Math.round(pendapatanLembur).toLocaleString('id-ID')}`;
-    document.getElementById('rInsentif').innerHTML = `Rp ${Math.round(insentifHadir).toLocaleString('id-ID')}`;
-    document.getElementById('rPotongan').innerHTML = `Rp ${Math.round(potonganIP).toLocaleString('id-ID')}`;
-    
-    document.getElementById('hasil').style.display = 'block';
-    
-    // Scroll ke hasil
-    document.getElementById('hasil').scrollIntoView({ behavior: 'smooth' });
+// ==================== MODAL KALENDER ====================
+function renderCalendarModal(data) {
+    const grid = document.getElementById('modalCalendarGrid');
+    if (!grid) return;
+    const start = new Date(START_DATE);
+    const end = new Date(END_DATE);
+    const dates = [];
+    let current = new Date(start);
+    while (current <= end) {
+        dates.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+    }
+    const dataMap = {};
+    data.forEach(item => { dataMap[item.date] = item; });
+    const hari = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'];
+    let html = '<div class="grid grid-cols-7 gap-1 text-center">';
+    for (let i = 0; i < 7; i++) html += `<div class="text-xs font-bold text-gray-500 py-2">${hari[i]}</div>`;
+    const firstDay = start.getDay();
+    for (let i = 0; i < firstDay; i++) html += `<div class="text-center text-gray-300 text-xs py-3 bg-gray-50 rounded"></div>`;
+    for (const date of dates) {
+        const dateStr = date.toISOString().split('T')[0];
+        const item = dataMap[dateStr];
+        const dayNum = date.getDate();
+        const jadwal = JADWAL_MEI[dateStr] || '';
+        const shiftClass = getShiftClass(jadwal);
+        let statusIcon = '◻️', tooltip = `Jadwal: ${jadwal || '-'}`;
+        if (item) {
+            statusIcon = getStatusIcon(item.aktual);
+            tooltip = `${item.aktual} - Jadwal: ${jadwal}`;
+        }
+        html += `
+            <div class="py-2 border rounded-lg ${shiftClass} cursor-help" title="${tooltip}">
+                <div class="text-sm font-bold">${dayNum}</div>
+                <div class="text-xs font-medium">${jadwal}</div>
+                <div class="text-sm">${statusIcon}</div>
+            </div>
+        `;
+    }
+    html += '</div>';
+    grid.innerHTML = html;
 }
 
-// Load default saat halaman dibuka
-window.addEventListener('load', () => {
-    loadPeriode();
-});
+function openCalendarModal() {
+    const modal = document.getElementById('calendarModal');
+    modal.style.display = 'flex';
+    renderCalendarModal(currentCalendarData);
+}
+
+function closeCalendarModal() {
+    document.getElementById('calendarModal').style.display = 'none';
+}
+
+// ==================== DASHBOARD ====================
+async function loadDataAndRender() {
+    document.getElementById('loadingSkeleton').classList.remove('hidden');
+    document.getElementById('mainContent').classList.add('hidden');
+    try {
+        const allData = await getAllAttendance();
+        const filteredData = allData.filter(item => item.date >= START_DATE && item.date <= END_DATE);
+        filteredData.sort((a,b) => new Date(a.date) - new Date(b.date));
+        currentCalendarData = filteredData;
+        const rekap = hitungRekap(filteredData);
+        
+        document.getElementById('rHadir').innerHTML = rekap.hadir;
+        document.getElementById('rIzin').innerHTML = rekap.ip;
+        document.getElementById('rCuti').innerHTML = rekap.cuti;
+        document.getElementById('rSakit').innerHTML = rekap.sakit;
+        document.getElementById('rOff').innerHTML = rekap.off;
+        document.getElementById('rAlpha').innerHTML = rekap.alpa;
+        document.getElementById('rLemburJam').innerHTML = rekap.jamLembur;
+        document.getElementById('rTotalJamKerja').innerHTML = rekap.totalJamKerja;
+        document.getElementById('rTotalHari').innerHTML = rekap.totalHari;
+        document.getElementById('predGajiBersih').innerHTML = formatRupiah(rekap.prediksiGaji);
+        document.getElementById('predPendapatanLembur').innerHTML = formatRupiah(rekap.pendapatanLembur);
+        document.getElementById('predInsentifHadir').innerHTML = formatRupiah(rekap.insentifHadir);
+        document.getElementById('predPotonganAbsen').innerHTML = formatRupiah(rekap.potonganAbsen);
+        document.getElementById('predTotalPendapatan').innerHTML = formatRupiah(rekap.totalPendapatan);
+        
+        document.getElementById('loadingSkeleton').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+        resetSessionTimer();
+    } catch (error) {
+        alert('Gagal memuat data: ' + error.message);
+        document.getElementById('loadingSkeleton').classList.add('hidden');
+    }
+}
+
+function showDashboard() {
+    const app = document.getElementById('app');
+    const initial = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U';
+    const nik = currentUser.nik || 'SII230421101';
+    const fotoUrl = `https://services-hris.huabao-indonesia.com/storage/employee/photos/${nik}.jpg`;
+    
+    app.innerHTML = `
+        <div class="max-w-md mx-auto">
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-5 py-5">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="text-white text-xs opacity-80">Slip Gaji Live</div>
+                            <div class="text-white text-xl font-bold">Prediksi Gaji Mei 2026</div>
+                        </div>
+                        <button onclick="logout()" class="bg-white/20 text-white px-3 py-1.5 rounded-xl text-xs hover:bg-white/30 transition">Logout</button>
+                    </div>
+                </div>
+                
+                <!-- User Info dengan Foto Profil -->
+                <div class="bg-blue-50 px-5 py-3 flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center overflow-hidden border-2 border-blue-200 shadow">
+                        <img src="${fotoUrl}" 
+                             class="w-full h-full object-cover"
+                             onerror="this.src='https://ui-avatars.com/api/?name=${escapeHtml(currentUser.name)}&background=3b82f6&color=fff&bold=true&size=48'"
+                             alt="Foto Profil">
+                    </div>
+                    <div>
+                        <div class="font-semibold text-gray-800">${escapeHtml(currentUser.name)}</div>
+                        <div class="text-xs text-gray-500">${escapeHtml(currentUser.nik)}</div>
+                    </div>
+                </div>
+                
+                <!-- Periode Info -->
+                <div class="px-5 py-3 bg-gray-50 flex justify-between items-center border-b">
+                    <div>
+                        <div class="text-xs text-gray-500">PERIODE</div>
+                        <div class="text-sm font-semibold">${formatTanggal(START_DATE)} - ${formatTanggal(END_DATE)}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-gray-500">STATUS</div>
+                        <div class="text-sm font-semibold text-yellow-600">Belum Tutup Buku</div>
+                    </div>
+                </div>
+                
+                <!-- Skeleton -->
+                <div id="loadingSkeleton" class="p-5">
+                    <div class="skeleton h-32 rounded-xl mb-3"></div>
+                    <div class="skeleton h-40 rounded-xl"></div>
+                </div>
+                
+                <!-- Main Content -->
+                <div id="mainContent" class="hidden">
+                    <!-- Tombol Kalender -->
+                    <div class="px-5 pt-4">
+                        <button onclick="openCalendarModal()" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition flex items-center justify-center gap-2">
+                            📅 Lihat Kalender Absensi
+                        </button>
+                    </div>
+                    
+                    <!-- Rekap Singkat -->
+                    <div class="p-5 pb-2">
+                        <div class="text-xs font-semibold text-gray-500 mb-3">📊 REKAP ABSENSI</div>
+                        <div class="grid grid-cols-4 gap-2 text-center mb-2">
+                            <div class="bg-green-50 rounded-xl p-2">
+                                <div class="text-green-600 text-xl font-bold" id="rHadir">0</div>
+                                <div class="text-[10px] text-gray-500">Hadir</div>
+                            </div>
+                            <div class="bg-orange-50 rounded-xl p-2">
+                                <div class="text-orange-600 text-xl font-bold" id="rIzin">0</div>
+                                <div class="text-[10px] text-gray-500">Izin (IP)</div>
+                            </div>
+                            <div class="bg-purple-50 rounded-xl p-2">
+                                <div class="text-purple-600 text-xl font-bold" id="rCuti">0</div>
+                                <div class="text-[10px] text-gray-500">Cuti</div>
+                            </div>
+                            <div class="bg-blue-50 rounded-xl p-2">
+                                <div class="text-blue-600 text-xl font-bold" id="rSakit">0</div>
+                                <div class="text-[10px] text-gray-500">Sakit</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-gray-50 rounded-xl p-2">
+                                <div class="text-gray-500 text-xl font-bold" id="rOff">0</div>
+                                <div class="text-[10px] text-gray-500">OFF</div>
+                            </div>
+                            <div class="bg-red-50 rounded-xl p-2">
+                                <div class="text-red-500 text-xl font-bold" id="rAlpha">0</div>
+                                <div class="text-[10px] text-gray-500">Alpha</div>
+                            </div>
+                            <div class="bg-yellow-50 rounded-xl p-2">
+                                <div class="text-yellow-600 text-xl font-bold" id="rLemburJam">0</div>
+                                <div class="text-[10px] text-gray-500">Lembur</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-[10px] text-gray-400">
+                            <span>Total Jam: <span id="rTotalJamKerja">0</span> jam</span>
+                            <span>Total Hari: <span id="rTotalHari">0</span> hari</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Prediksi Gaji -->
+                    <div class="p-5 pt-0">
+                        <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4">
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 uppercase tracking-wide">💰 Estimasi Gaji Bersih (Mei 2026)</div>
+                                <div class="text-2xl font-bold text-green-600 mt-1" id="predGajiBersih">Rp 0</div>
+                            </div>
+                            <div class="mt-3 text-xs border-t pt-2 space-y-1">
+                                <div class="flex justify-between"><span class="text-gray-600">Gaji Pokok + Tunjangan</span><span>${formatRupiah(GAJI_POKOK_TUNJANGAN)}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600">+ Insentif Keluarga</span><span>${formatRupiah(INSENTIF_KELUARGA)}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600">+ Insentif Hadir</span><span id="predInsentifHadir" class="text-green-600">Rp 0</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600">+ Pendapatan Lembur</span><span id="predPendapatanLembur" class="text-green-600">Rp 0</span></div>
+                                <div class="flex justify-between border-t border-gray-200 mt-1 pt-1"><span class="font-semibold">Total Pendapatan</span><span id="predTotalPendapatan" class="font-semibold text-blue-600">Rp 0</span></div>
+                                <div class="flex justify-between text-red-600"><span>- Potongan Tetap</span><span>${formatRupiah(POTONGAN_TETAP)}</span></div>
+                                <div class="flex justify-between text-red-600"><span>- Potongan IP</span><span id="predPotonganAbsen">Rp 0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Refresh -->
+                    <div class="px-5 pb-5">
+                        <button onclick="refreshData()" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition">
+                            🔄 Refresh Data
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div class="bg-gray-50 px-5 py-2 text-center text-[10px] text-gray-400 border-t">
+                    Sesi berakhir 55 menit | Data real-time dari HRIS
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Kalender -->
+        <div id="calendarModal" class="modal" onclick="if(event.target===this) closeCalendarModal()">
+            <div class="modal-content" style="max-width: 95%; width: 420px;">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 rounded-t-xl flex justify-between items-center">
+                    <div class="text-white font-bold">📅 Kalender Absensi Mei 2026</div>
+                    <button onclick="closeCalendarModal()" class="text-white text-2xl leading-none">&times;</button>
+                </div>
+                <div class="p-3">
+                    <div id="modalCalendarGrid" class="min-h-[300px]"></div>
+                    <div class="text-center mt-3 text-[10px] text-gray-400">
+                        <span class="inline-block mx-1">📌 Jadwal (P/M/OFF)</span> •
+                        <span class="inline-block mx-1">✅ Hadir</span> •
+                        <span class="inline-block mx-1">📝 IP</span> •
+                        <span class="inline-block mx-1">🏠 Cuti</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    loadDataAndRender();
+}
+
+async function refreshData() {
+    const btn = document.querySelector('button[onclick="refreshData()"]');
+    if (btn) { btn.innerHTML = '🔄 Memuat...'; btn.disabled = true; }
+    await loadDataAndRender();
+    if (btn) { btn.innerHTML = '🔄 Refresh Data'; btn.disabled = false; }
+}
+
+function logout() {
+    if (sessionTimer) clearTimeout(sessionTimer);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
+    authToken = null;
+    currentUser = null;
+    showLoginPage();
+}
+
+// ==================== LOGIN PAGE ====================
+function showLoginPage(errorMsg = '') {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-6">
+            <div class="text-center mb-6">
+                <div class="text-5xl mb-3">📱</div>
+                <h2 class="text-2xl font-bold text-gray-800">Slip Gaji Live</h2>
+                <p class="text-gray-500 text-sm mt-1">Masuk dengan akun Anda</p>
+            </div>
+            ${errorMsg ? `<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">❌ ${escapeHtml(errorMsg)}</div>` : ''}
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Username / NIK</label>
+                    <input type="text" id="username" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: SII230421101" required>
+                </div>
+                <div class="mb-5">
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan password" required>
+                </div>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-semibold rounded-xl transition">Login</button>
+            </form>
+            <p class="text-center text-gray-400 text-xs mt-5">Gunakan username & password asli Anda</p>
+        </div>
+    `;
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        if (!username || !password) { showLoginPage('Username dan password harus diisi'); return; }
+        const btn = e.target.querySelector('button');
+        btn.innerText = 'Memproses...';
+        btn.disabled = true;
+        const result = await login(username, password);
+        if (result.success) {
+            authToken = result.token;
+            currentUser = result.user;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            startSessionTimer();
+            showDashboard();
+        } else {
+            btn.innerText = 'Login';
+            btn.disabled = false;
+            showLoginPage(result.message);
+        }
+    });
+}
+
+// ==================== INIT ====================
+function init() {
+    const savedToken = localStorage.getItem('authToken');
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedToken && savedUser) {
+        authToken = savedToken;
+        currentUser = JSON.parse(savedUser);
+        startSessionTimer();
+        showDashboard();
+    } else {
+        showLoginPage();
+    }
+}
+
+window.logout = logout;
+window.refreshData = refreshData;
+window.openCalendarModal = openCalendarModal;
+window.closeCalendarModal = closeCalendarModal;
+
+init();
 </script>
 
 </body>
