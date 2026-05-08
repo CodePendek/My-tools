@@ -161,22 +161,39 @@
         </div>
     </div>
 
-   <script>
-    // Deteksi folder secara otomatis
-    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-    
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register(basePath + 'sw.js', {
-                scope: basePath
-            }).then(function(registration) {
-                console.log('Service Worker terdaftar di scope:', registration.scope);
-            }).catch(function(error) {
-                console.log('Pendaftaran Service Worker gagal:', error);
-            });
-        });
-    }
-</script>
+    <script>
+        // Dapatkan base path (contoh: /my-tools/)
+        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        
+        function openTool(toolName) {
+            if (toolName === 'absensi') {
+                localStorage.setItem('activeTool', 'absensi');
+                window.location.href = basePath + 'absensi.html';
+            } else if (toolName === 'slip') {
+                localStorage.setItem('activeTool', 'slip');
+                window.location.href = basePath + 'slip.html';
+            } else if (toolName === 'retase') {
+                localStorage.setItem('activeTool', 'retase');
+                window.location.href = basePath + 'retase.html';
+            }
+        }
 
+        // Registrasi Service Worker dengan base path
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register(basePath + 'sw.js', {
+                    scope: basePath
+                }).then(function(registration) {
+                    console.log('Service Worker registered:', registration.scope);
+                }).catch(function(error) {
+                    console.log('Service Worker failed:', error);
+                });
+            });
+        }
+
+        window.addEventListener('load', function() {
+            console.log('Tools Hub siap digunakan - Base path:', basePath);
+        });
+    </script>
 </body>
 </html>
