@@ -5,19 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Tools Hub - Dashboard</title>
     
-    <!-- PWA - auto detect base path -->
+    <!-- PWA -->
     <link rel="manifest" href="manifest.json">
-    <script>
-        // Auto detect base path untuk PWA
-        (function() {
-            const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-            const manifestLink = document.querySelector('link[rel="manifest"]');
-            if (manifestLink) {
-                manifestLink.href = basePath + 'manifest.json';
-            }
-        })();
-    </script>
-    
     <meta name="theme-color" content="#3b82f6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -70,10 +59,10 @@
                     </p>
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">✅ Aktif</span>
-                        <button onclick="openTool('absensi')" 
-                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
+                        <a href="absensi.html" 
+                           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition inline-block">
                             Buka →
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -96,7 +85,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">✅ Aktif</span>
                         <a href="https://shift-ku.vercel.app" target="_blank" 
-                           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition inline-block">
                             Buka →
                         </a>
                     </div>
@@ -120,10 +109,10 @@
                     </p>
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">✅ Aktif</span>
-                        <button onclick="openTool('slip')" 
-                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+                        <a href="slip.html" 
+                           class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition inline-block">
                             Buka →
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -145,10 +134,10 @@
                     </p>
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">✅ Aktif</span>
-                        <button onclick="openTool('retase')" 
-                                class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-lg transition">
+                        <a href="retase.html" 
+                           class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-lg transition inline-block">
                             Buka →
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -162,39 +151,16 @@
     </div>
 
     <script>
-        // Dapatkan base path (contoh: /my-tools/)
-        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-        
-        function openTool(toolName) {
-    // Gunakan path relatif saja, tanpa basePath deteksi rumit
-    if (toolName === 'absensi') {
-        localStorage.setItem('activeTool', 'absensi');
-        window.location.href = 'absensi.html';
-    } else if (toolName === 'slip') {
-        localStorage.setItem('activeTool', 'slip');
-        window.location.href = 'slip.html';
-    } else if (toolName === 'retase') {
-        localStorage.setItem('activeTool', 'retase');
-        window.location.href = 'retase.html';
-    }
-}
-
-        // Registrasi Service Worker dengan base path
+        // Registrasi Service Worker untuk PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register(basePath + 'sw.js', {
-                    scope: basePath
-                }).then(function(registration) {
+                navigator.serviceWorker.register('sw.js').then(function(registration) {
                     console.log('Service Worker registered:', registration.scope);
                 }).catch(function(error) {
                     console.log('Service Worker failed:', error);
                 });
             });
         }
-
-        window.addEventListener('load', function() {
-            console.log('Tools Hub siap digunakan - Base path:', basePath);
-        });
     </script>
 </body>
 </html>
