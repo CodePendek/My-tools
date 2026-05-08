@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Tools Hub - Dashboard</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tools Hub">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -143,7 +152,18 @@
     </div>
 
     <script>
-        // Fungsi untuk membuka tools yang sudah dibuat
+        // Daftar file yang perlu di-cache untuk PWA
+        const CACHE_FILES = [
+            '/',
+            '/index.html',
+            '/absensi.html',
+            '/slip.html',
+            '/retase.html',
+            '/manifest.json',
+            '/sw.js'
+        ];
+
+        // Fungsi untuk membuka tools
         function openTool(toolName) {
             if (toolName === 'absensi') {
                 localStorage.setItem('activeTool', 'absensi');
@@ -157,9 +177,19 @@
             }
         }
 
-        // Cek apakah ada tool yang sedang aktif
+        // Registrasi Service Worker untuk PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('Service Worker registered successfully:', registration.scope);
+                }).catch(function(error) {
+                    console.log('Service Worker registration failed:', error);
+                });
+            });
+        }
+
         window.addEventListener('load', function() {
-            console.log('Tools Hub siap digunakan');
+            console.log('Tools Hub siap digunakan - PWA ready');
         });
     </script>
 </body>
