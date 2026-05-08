@@ -2,15 +2,15 @@
   "name": "Tools Hub",
   "short_name": "ToolsHub",
   "description": "Kumpulan tools bantuan untuk aktivitas kerja",
-  "start_url": "/my-tools/",
-  "scope": "/my-tools/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "theme_color": "#3b82f6",
   "background_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/my-tools/icons/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

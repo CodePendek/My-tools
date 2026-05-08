@@ -5,12 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Tools Hub - Dashboard</title>
     
-    <!-- PWA Meta Tags -->
-<link rel="manifest" href="/my-tools/manifest.json">    <meta name="theme-color" content="#3b82f6">
+    <!-- PWA - auto detect base path -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+        // Auto detect base path untuk PWA
+        (function() {
+            const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+            const manifestLink = document.querySelector('link[rel="manifest"]');
+            if (manifestLink) {
+                manifestLink.href = basePath + 'manifest.json';
+            }
+        })();
+    </script>
+    
+    <meta name="theme-color" content="#3b82f6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Tools Hub">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -151,44 +162,37 @@
     </div>
 
     <script>
-        // Daftar file yang perlu di-cache untuk PWA
-        const CACHE_FILES = [
-            '/',
-            '/index.html',
-            '/absensi.html',
-            '/slip.html',
-            '/retase.html',
-            '/manifest.json',
-            '/sw.js'
-        ];
-
-        // Fungsi untuk membuka tools
+        // Dapatkan base path (contoh: /my-tools/)
+        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        
         function openTool(toolName) {
             if (toolName === 'absensi') {
                 localStorage.setItem('activeTool', 'absensi');
-                window.location.href = 'absensi.html';
+                window.location.href = basePath + 'absensi.html';
             } else if (toolName === 'slip') {
                 localStorage.setItem('activeTool', 'slip');
-                window.location.href = 'slip.html';
+                window.location.href = basePath + 'slip.html';
             } else if (toolName === 'retase') {
                 localStorage.setItem('activeTool', 'retase');
-                window.location.href = 'retase.html';
+                window.location.href = basePath + 'retase.html';
             }
         }
 
-        // Registrasi Service Worker untuk PWA
+        // Registrasi Service Worker dengan base path
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('Service Worker registered successfully:', registration.scope);
+                navigator.serviceWorker.register(basePath + 'sw.js', {
+                    scope: basePath
+                }).then(function(registration) {
+                    console.log('Service Worker registered:', registration.scope);
                 }).catch(function(error) {
-                    console.log('Service Worker registration failed:', error);
+                    console.log('Service Worker failed:', error);
                 });
             });
         }
 
         window.addEventListener('load', function() {
-            console.log('Tools Hub siap digunakan - PWA ready');
+            console.log('Tools Hub siap digunakan - Base path:', basePath);
         });
     </script>
 </body>
