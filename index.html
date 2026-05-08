@@ -59,35 +59,33 @@
                 </div>
             </div>
             
-            <!-- Card Shiftku - Kalender Kerja -->
-<div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
-    <div class="p-5">
-        <div class="flex items-center gap-3 mb-3">
-            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-xl">
-                📅
+            <!-- Tool 2: Shiftku - Kalender Kerja -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+                <div class="p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-xl">
+                            📅
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Shiftku</h3>
+                            <p class="text-xs text-gray-400">Kalender Kerja</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Lihat jadwal shift, dan informasi SPL 
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">✅ Aktif</span>
+                        <a href="https://shift-ku.vercel.app" target="_blank" 
+                           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                            Buka →
+                        </a>
+                    </div>
+                </div>
             </div>
-            <div>
-                <h3 class="font-semibold text-gray-800">Shiftku</h3>
-                <p class="text-xs text-gray-400">Kalender Kerja</p>
-            </div>
-        </div>
-        <p class="text-gray-600 text-sm mb-4">
-            Lihat jadwal shift, dan informasi SPL 
-        </p>
-        <div class="flex items-center justify-between">
-            <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">✅ Aktif</span>
-            <a href="https://shift-ku.vercel.app" target="_blank" 
-               class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-                Buka →
-            </a>
-        </div>
-    </div>
-</div>
 
-
-
-            <!-- Tool 4: (Placeholder) -->
-<div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+            <!-- Tool 3: Prediksi Gaji -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
                 <div class="p-5">
                     <div class="flex items-center gap-3 mb-3">
                         <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-xl">
@@ -111,7 +109,31 @@
                 </div>
             </div>
 
-
+            <!-- Tool 4: Hitung Retase -->
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
+                <div class="p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center text-xl">
+                            🚛
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Hitung Retase</h3>
+                            <p class="text-xs text-gray-400">Hitung retase gampang</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Hitung retase detail dengan waktunya, auto save.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">✅ Aktif</span>
+                        <button onclick="openTool('retase')" 
+                                class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-lg transition">
+                            Buka →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Info Footer -->
         <div class="mt-8 text-center text-xs text-gray-400">
@@ -124,13 +146,14 @@
         // Fungsi untuk membuka tools yang sudah dibuat
         function openTool(toolName) {
             if (toolName === 'absensi') {
-                // Buka halaman absensi (simpan dulu di localStorage atau buka di tab baru)
-                // Kita simpan data tools yang aktif
                 localStorage.setItem('activeTool', 'absensi');
                 window.location.href = 'absensi.html';
-            }else if(toolName === 'slip'){
-                localStorage.setItem('activeTool', 'slip')
-                window.location.href = "slip.html"
+            } else if (toolName === 'slip') {
+                localStorage.setItem('activeTool', 'slip');
+                window.location.href = 'slip.html';
+            } else if (toolName === 'retase') {
+                localStorage.setItem('activeTool', 'retase');
+                window.location.href = 'retase.html';
             }
         }
 

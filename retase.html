@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+	<title>Retase Mobil</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<style>
+		.modal {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			z-index: 1000;
+			justify-content: center;
+			align-items: center;
+		}
+		.modal-content {
+			background: white;
+			border-radius: 24px;
+			max-width: 90%;
+			width: 340px;
+		}
+		.btn-besar {
+			min-height: 48px;
+			touch-action: manipulation;
+		}
+	</style>
+</head>
+<body class="bg-gray-100">
+
+<div id="app"></div>
+
+<script>
+// Data utama
+let units = [];
+
+// Load dari localStorage
+function loadData() {
+	const saved = localStorage.getItem('retase_app');
+	if (saved) {
+		units = JSON.parse(saved);
+	} else {
+		units = [];
+	}
+	render();
+}
+
+// Simpan ke localStorage
+function saveData() {
+	localStorage.setItem('retase_app', JSON.stringify(units));
+}
+
+// Format waktu lokal Indonesia
+function formatWaktu(date) {
+	const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+	const day = days[date.getDay()];
+	const d = date.getDate().toString().padStart(2,'0');
+	const m = (date.getMonth()+1).toString().padStart(2,'0');
+	const y = date.getFullYear();
+	const h = date.getHours().toString().padStart(2,'0');
+	const min = date.getMinutes().toString().padStart(2,'0');
+	return `${day}, ${d}/${m}/${y} ${h}:${min}`;
+}
+
+// Tambah unit
+function tambahUnit(nomor) {
+	if (!nomor) return false;
+	if (units.some(u => u.nomor === nomor)) {
+		alert(`⚠️ Unit ${nomor} sudah ada!`);
+		return false;
+	}
+	units.push({
+		id: Date.now(),
+		nomor: nomor,
+		retase: 0,
+		logs: []
+	});
+	saveData();
+	render();
+	return true;
+}
+
+// Hapus semua
+function hapusSemua() {
+	if (units.length === 0) {
+		alert('Tidak ada unit yang dihapus');
+		return;
+	}
+	if (confirm(`Hapus SEMUA ${units.length} unit?`)) {
+		units = [];
+		saveData();
+		render();
+	}
+}
+
+// Hapus satu unit
+function hapusUnit(id) {
+	const unit = units.find(u => u.id === id);
+	if (confirm(`Hapus unit ${unit.nomor}?`)) {
+		units = units.filter(u => u.id !== id);
+		saveData();
+		render();
+	}
+}
+
+// Update retase (+/-)
+function updateRetase(id, delta) {
+	const idx = units.findIndex(u => u.id === id);
+	if (idx === -1) return;
+
+	const baru = units[idx].retase + delta;
+	if (baru < 0) {
+		alert('Retase tidak bisa minus!');
+		return;
+	}
+
+	// Catat log
+	units[idx].logs.unshift({
+		waktu: formatWaktu(new Date()),
+		perubahan: delta,
+		retaseBaru: baru
+	});
+	units[idx].retase = baru;
+
+	saveData();
+	render();
+}
+
+// Show detail log
+function showDetail(id) {
+	const unit = units.find(u => u.id === id);
+	if (!unit) return;
+
+	const modal = document.getElementById('logModal');
+	const content = document.getElementById('logContent');
+
+	if (unit.logs.length === 0) {
+		content.innerHTML = `<div class="text-center py-8 text-gray-400">📭 Belum ada aktivitas</div>`;
+	} else {
+		let html = `<div class="space-y-2">`;
+		unit.logs.forEach(log => {
+			const perubahanText = log.perubahan > 0 ? `+${log.perubahan}` : `${log.perubahan}`;
+			const warna = log.perubahan > 0 ? 'text-green-600' : 'text-red-600';
+			html += `
+				<div class="bg-gray-50 rounded-lg p-3">
+					<div class="flex justify-between items-center">
+						<span class="text-xs text-gray-500">${log.waktu}</span>
+						<span class="font-bold ${warna}">${perubahanText}</span>
+					</div>
+					<div class="text-sm mt-1">Retase: <b>${log.retaseBaru}</b></div>
+				</div>
+			`;
+		});
+		html += `</div>`;
+		content.innerHTML = html;
+	}
+
+	modal.style.display = 'flex';
+}
+
+// Modal tambah
+function bukaModalTambah() {
+	document.getElementById('addModal').style.display = 'flex';
+	document.getElementById('inputNomor').value = '';
+	setTimeout(() => document.getElementById('inputNomor').focus(), 100);
+}
+
+function tutupModal() {
+	document.getElementById('addModal').style.display = 'none';
+	document.getElementById('logModal').style.display = 'none';
+}
+
+function submitTambah() {
+	const input = document.getElementById('inputNomor');
+	const nomor = input.value.trim();
+	if (!nomor) {
+		alert('Masukkan nomor unit!');
+		return;
+	}
+	if (tambahUnit(nomor)) {
+		tutupModal();
+	}
+}
+
+// Total retase
+function totalRetase() {
+	return units.reduce((sum, u) => sum + u.retase, 0);
+}
+
+// Render UI
+function render() {
+	const app = document.getElementById('app');
+	const total = totalRetase();
+
+	app.innerHTML = `
+		<!-- Header -->
+		<div class="bg-emerald-500 px-4 py-5 shadow-md sticky top-0 z-10">
+			<div class="flex justify-between items-center">
+				<div>
+					<h1 class="text-2xl font-bold text-white">Retase</h1>
+					<p class="text-emerald-100 text-sm">Hitung retase lebih gampang</p>
+				</div>
+				<div class="text-3xl">🚛</div>
+			</div>
+		</div>
+
+		<!-- Daftar Unit -->
+		<div class="p-3 pb-32">
+			${units.length === 0 ? `
+				<div class="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
+					<div class="text-5xl mb-3">📭</div>
+					<p class="mb-2">Belum ada unit mobil</p>
+					<p class="text-xs">Klik "Tambah Mobil" untuk mulai</p>
+				</div>
+			` : `
+				<div class="space-y-3">
+					${units.map(unit => `
+						<div class="bg-white rounded-2xl shadow-sm p-4">
+							<div class="flex justify-between items-center">
+								<div class="flex items-center gap-3">
+									<span class="text-xl font-bold">${unit.nomor} =</span>
+									<span class="text-3xl font-bold text-emerald-600">${unit.retase}</span>
+								</div>
+								<div class="flex gap-2">
+									<button onclick="showDetail(${unit.id})" class="bg-gray-100 px-3 py-2 rounded-full text-sm">Detail</button>
+									<button onclick="updateRetase(${unit.id}, -1)" class="w-10 h-10 bg-red-100 text-red-600 rounded-full text-xl font-bold">−</button>
+									<button onclick="updateRetase(${unit.id}, 1)" class="w-10 h-10 bg-green-100 text-green-600 rounded-full text-xl font-bold">+</button>
+									<button onclick="hapusUnit(${unit.id})" class="w-10 h-10 bg-gray-100 text-gray-500 rounded-full text-lg">🗑️</button>
+								</div>
+							</div>
+						</div>
+					`).join('')}
+				</div>
+			`}
+		</div>
+
+		<!-- Footer -->
+		<div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 p-3">
+			<div class="flex gap-2 mb-2">
+				<button onclick="bukaModalTambah()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl text-lg btn-besar">
+					+ Tambah Mobil
+				</button>
+				<button onclick="hapusSemua()" class="bg-red-500 hover:bg-red-600 text-white font-bold px-5 py-3 rounded-xl text-lg btn-besar">
+					🗑️
+				</button>
+			</div>
+			<div class="flex justify-between items-center">
+				<span class="font-semibold">Total Retase = <span class="text-emerald-700 text-2xl font-bold">${total}</span></span>
+			</div>
+		</div>
+
+		<!-- Modal Tambah -->
+		<div id="addModal" class="modal" onclick="if(event.target===this) tutupModal()">
+			<div class="modal-content p-5">
+				<div class="flex justify-between items-center mb-4">
+					<h3 class="text-lg font-bold">Tambah Mobil</h3>
+					<button onclick="tutupModal()" class="text-gray-400 text-2xl">&times;</button>
+				</div>
+				<input type="text" id="inputNomor" placeholder="Nomor unit (contoh: 233)" class="w-full border border-gray-200 rounded-xl p-3 mb-4 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+				<button onclick="submitTambah()" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl text-lg">Tambah</button>
+			</div>
+		</div>
+
+		<!-- Modal Detail Log -->
+		<div id="logModal" class="modal" onclick="if(event.target===this) tutupModal()">
+			<div class="modal-content p-4">
+				<div class="flex justify-between items-center border-b pb-2 mb-3">
+					<h3 class="font-bold text-lg">📋 Riwayat Perubahan</h3>
+					<button onclick="tutupModal()" class="text-gray-400 text-2xl">&times;</button>
+				</div>
+				<div id="logContent" class="max-h-96 overflow-y-auto">
+					<div class="text-center py-6 text-gray-400">Loading...</div>
+				</div>
+			</div>
+		</div>
+	`;
+}
+
+// Expose global
+window.tambahUnit = tambahUnit;
+window.hapusSemua = hapusSemua;
+window.hapusUnit = hapusUnit;
+window.updateRetase = updateRetase;
+window.showDetail = showDetail;
+window.bukaModalTambah = bukaModalTambah;
+window.tutupModal = tutupModal;
+window.submitTambah = submitTambah;
+
+// Start
+loadData();
+</script>
+
+</body>
+</html>
