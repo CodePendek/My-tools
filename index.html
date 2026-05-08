@@ -166,17 +166,18 @@
         const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
         
         function openTool(toolName) {
-            if (toolName === 'absensi') {
-                localStorage.setItem('activeTool', 'absensi');
-                window.location.href = basePath + 'absensi.html';
-            } else if (toolName === 'slip') {
-                localStorage.setItem('activeTool', 'slip');
-                window.location.href = basePath + 'slip.html';
-            } else if (toolName === 'retase') {
-                localStorage.setItem('activeTool', 'retase');
-                window.location.href = basePath + 'retase.html';
-            }
-        }
+    // Gunakan path relatif saja, tanpa basePath deteksi rumit
+    if (toolName === 'absensi') {
+        localStorage.setItem('activeTool', 'absensi');
+        window.location.href = 'absensi.html';
+    } else if (toolName === 'slip') {
+        localStorage.setItem('activeTool', 'slip');
+        window.location.href = 'slip.html';
+    } else if (toolName === 'retase') {
+        localStorage.setItem('activeTool', 'retase');
+        window.location.href = 'retase.html';
+    }
+}
 
         // Registrasi Service Worker dengan base path
         if ('serviceWorker' in navigator) {
